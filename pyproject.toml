@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "ditree"
+version = "0.0.1"
+description = "Dependency Injector with dataclass integration"
+authors = ["Anton Demkin <antondemkin@yandex.ru>"]
+license = "MIT"
+readme = "README.rst"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
