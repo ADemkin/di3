@@ -1,0 +1,2 @@
+class DependencyInjectionError(Exception):
+    pass
