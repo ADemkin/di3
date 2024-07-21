@@ -1,13 +1,35 @@
+[tool.isort]
+force_single_line = true
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+implicit_optional = true
+warn_unreachable = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+strict = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+follow_imports = "skip"
+ignore_errors = true
+
+
 [tool.poetry]
-name = "ditree"
+name = "di3"
 version = "0.0.1"
-description = "Dependency Injector with dataclass integration"
+description = "Dependency Injector Tree builder framework"
 authors = ["Anton Demkin <antondemkin@yandex.ru>"]
 license = "MIT"
 readme = "README.rst"
 
 [tool.poetry.dependencies]
 python = [
+    "^3.8",
     "^3.9",
     "^3.10",
     "^3.11",
