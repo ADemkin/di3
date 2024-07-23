@@ -1,3 +1,6 @@
+from typing import Any
+from typing import Mapping
+from typing import get_type_hints
 from typing import Generic
 from typing import TypeVar
 from typing import Type
@@ -22,4 +25,15 @@ class Provider(Generic[T]):
     def build(self, cls: Type[T]) -> T:
         if (instance := self._instances.get(name(cls))) is not None:
             return instance
-        raise DependencyInjectionError(f"Instance of {name(cls)!r} is not registered")
+        dependencies = self.gather_dependencies(cls)
+        return cls(**dependencies)
+
+    def gather_dependencies(self, obj: Type[T]) -> Mapping[str, Any]:
+        try:
+            type_hints = get_type_hints(obj)
+        except NameError as err:
+            raise DependencyInjectionError(f"unable to resolve dependency {err.name!r}")
+        kwargs = {}
+        for arg, dep in type_hints.items():
+            kwargs[arg] = self.build(dep)
+        return kwargs

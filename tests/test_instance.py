@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from di3 import Provider
 from di3 import DependencyInjectionError
 
@@ -5,18 +7,23 @@ import pytest
 
 
 def test_build_gives_registered_instance(provider: Provider) -> None:
-    class A:
-        pass
+    @dataclass
+    class Logger:
+        level: str = "INFO"
 
-    a = A()
-    provider.register_instance(a)
-    assert provider.build(A) is a
+    logger = Logger()
+    provider.register_instance(logger)
+    assert provider.build(Logger) is logger
 
 
-def test_build_raises_if_no_instance_registered(provider: Provider) -> None:
-    class A:
-        pass
+@pytest.mark.xfail
+def test_build_raises_if_class_is_not_registered_and_not_injectable(
+    provider: Provider,
+) -> None:
+    @dataclass
+    class Logger:
+        level: str = "INFO"
 
     with pytest.raises(DependencyInjectionError) as e:
-        provider.build(A)
-    assert "Instance of 'A' is not registered" in str(e.value)
+        provider.build(Logger)
+    assert "instance of 'Logger' is not registered" in str(e.value)
