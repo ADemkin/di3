@@ -168,7 +168,7 @@ def test_build_fails_if_not_enough_params(
 
     with pytest.raises(
         DependencyInjectionError,
-        match="Not enought params to build <class 'str'>",
+        match="Can not build 'Service': no value for param host: str",
     ):
         provider.build(Service)
 
@@ -187,13 +187,33 @@ def test_build_fails_if_not_enough_params_for_dependency(
         port: int = 8080
 
     with pytest.raises(
-        DependencyInjectionError,
-        match="Not enought params to build <class 'str'>",
+        DependencyInjectionError, match="Can not build 'Logger': no value for param level: str"
     ):
         provider.build(Service)
 
 
-def test_build_allow_to_build_builtin_object(
+def test_build_allow_to_inject_function(
     provider: Provider,
 ) -> None:
-    assert provider.build(int, 42) == 42
+    @dataclass
+    class Logger:
+        level: str = "INFO"
+
+    def function(number: int, logger: Logger) -> int:
+        return number
+
+    assert provider.build(function, number=42) == 42
+
+
+def test_build_does_not_cache_function(
+    provider: Provider,
+) -> None:
+    @dataclass
+    class Logger:
+        level: str = "INFO"
+
+    def function(number: int, logger: Logger) -> int:
+        return number
+
+    assert provider.build(function, number=42) == 42
+    assert provider.build(function, number=21) == 21
