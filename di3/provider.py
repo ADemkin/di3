@@ -41,7 +41,9 @@ class Provider(Generic[T]):
         if (instance := self._instances.get(factory)) is not None:
             return instance
         dependencies = self.gather_dependencies(factory, *args, **kwargs)
-        return factory(**dependencies)  # type: ignore[call-arg]
+        instance = factory(**dependencies)  # type: ignore[call-arg]
+        self.register_instance(instance)
+        return instance
 
     def gather_dependencies(
         self,

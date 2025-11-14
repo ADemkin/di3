@@ -20,6 +20,7 @@ def test_build_inject_single_dependency(provider: Provider) -> None:
 
     client = provider.build(Client)
     assert isinstance(client, Client)
+    assert isinstance(client.logger, Logger)
 
 
 def test_build_injects_multiple_dependencies(provider: Provider) -> None:
@@ -42,6 +43,7 @@ def test_build_injects_multiple_dependencies(provider: Provider) -> None:
     assert isinstance(service, Service)
     assert isinstance(service.client, Client)
     assert isinstance(service.logger, Logger)
+    assert isinstance(service.client.logger, Logger)
 
 
 def test_build_injects_same_instance_when_building_multiple_dependencies(
@@ -67,6 +69,28 @@ def test_build_injects_same_instance_when_building_multiple_dependencies(
     service = provider.build(Service)
     assert service.logger is logger
     assert service.client.logger is logger
+
+
+def test_build_uses_same_instance_when_building_multiple_dependencies(
+    provider: Provider,
+) -> None:
+    @dataclass
+    class Logger:
+        level: str = "INFO"
+
+    @dataclass
+    class Client:
+        logger: Logger
+        host: str = "localhost"
+        port: int = 8080
+
+    @dataclass
+    class Service:
+        logger: Logger
+        client: Client
+
+    service = provider.build(Service)
+    assert service.logger is service.client.logger
 
 
 def test_build_raises_if_unknown_dependency(provider: Provider) -> None:
