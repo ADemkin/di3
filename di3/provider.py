@@ -1,6 +1,7 @@
 import inspect
 from dataclasses import dataclass
 from dataclasses import field
+from functools import wraps
 from typing import Any
 from typing import Callable
 from typing import Generic
@@ -67,3 +68,11 @@ class Provider(Generic[T]):
                 )
             dependencies[arg] = self.build(dep)
         return dependencies
+
+    def inject(self, func: Callable[P, T]) -> Callable[P, T]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            dependencies = self.gather_dependencies(func, *args, **kwargs)
+            return func(**dependencies)  # type: ignore[call-arg]
+
+        return wrapper

@@ -98,10 +98,11 @@ def test_build_raises_if_unknown_dependency(provider: Provider) -> None:
     class WithMissingDependency:
         undefined: "Undefined"  # type: ignore # noqa: F821
 
-    with pytest.raises(DependencyInjectionError) as err:
+    with pytest.raises(
+        DependencyInjectionError,
+        match="unable to resolve dependency 'Undefined'",
+    ):
         provider.build(WithMissingDependency)
-
-    assert "unable to resolve dependency 'Undefined'" in str(err.value)
 
 
 def test_build_keeps_default_values_when_building(provider: Provider) -> None:
@@ -142,9 +143,7 @@ def test_build_injects_class_from_string_type(
     assert isinstance(service.logger, Logger)
 
 
-def test_build_uses_provided_params(
-    provider: Provider,
-) -> None:
+def test_build_uses_provided_params(provider: Provider) -> None:
     @dataclass
     class Logger:
         level: str = "INFO"
@@ -158,9 +157,7 @@ def test_build_uses_provided_params(
     assert service.logger is logger
 
 
-def test_build_fails_if_not_enough_params(
-    provider: Provider,
-) -> None:
+def test_build_fails_if_not_enough_params(provider: Provider) -> None:
     @dataclass
     class Service:
         host: str
@@ -173,9 +170,7 @@ def test_build_fails_if_not_enough_params(
         provider.build(Service)
 
 
-def test_build_fails_if_not_enough_params_for_dependency(
-    provider: Provider,
-) -> None:
+def test_build_fails_if_not_enough_params_for_dependency(provider: Provider) -> None:
     @dataclass
     class Logger:
         level: str
@@ -187,14 +182,13 @@ def test_build_fails_if_not_enough_params_for_dependency(
         port: int = 8080
 
     with pytest.raises(
-        DependencyInjectionError, match="Can not build 'Logger': no value for param level: str"
+        DependencyInjectionError,
+        match="Can not build 'Logger': no value for param level: str",
     ):
         provider.build(Service)
 
 
-def test_build_allow_to_inject_function(
-    provider: Provider,
-) -> None:
+def test_build_allow_to_inject_function(provider: Provider) -> None:
     @dataclass
     class Logger:
         level: str = "INFO"
@@ -205,9 +199,7 @@ def test_build_allow_to_inject_function(
     assert provider.build(function, number=42) == 42
 
 
-def test_build_does_not_cache_function(
-    provider: Provider,
-) -> None:
+def test_build_does_not_cache_function(provider: Provider) -> None:
     @dataclass
     class Logger:
         level: str = "INFO"
@@ -217,3 +209,51 @@ def test_build_does_not_cache_function(
 
     assert provider.build(function, number=42) == 42
     assert provider.build(function, number=21) == 21
+
+
+def test_inject_provides_dependencies(provider: Provider) -> None:
+    @dataclass
+    class Logger:
+        level: str = "INFO"
+
+    @provider.inject
+    def function(logger: Logger) -> int:
+        assert isinstance(logger, Logger)
+
+    function()
+
+
+def test_inject_allows_kwarg_params(provider: Provider) -> None:
+    @dataclass
+    class Logger:
+        level: str = "INFO"
+
+    @provider.inject
+    def function(number: int, logger: Logger) -> int:
+        return number
+
+    assert function(number=42) == 42
+
+
+def test_inject_allows_arg_params(provider: Provider) -> None:
+    @dataclass
+    class Logger:
+        level: str = "INFO"
+
+    @provider.inject
+    def function(number: int, logger: Logger) -> int:
+        return number
+
+    assert function(42) == 42
+
+
+async def test_inject_provides_dependencies_for_async_func(provider: Provider) -> None:
+    @dataclass
+    class Logger:
+        level: str = "INFO"
+
+    @provider.inject
+    async def function(logger: Logger) -> int:
+        assert isinstance(logger, Logger)
+
+    await function()
