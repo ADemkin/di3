@@ -4,11 +4,14 @@ from dataclasses import dataclass
 from dataclasses import field
 from functools import wraps
 import inspect
+from typing import Annotated
 from typing import Any
 from typing import Generic
 from typing import ParamSpec
 from typing import TypeVar
 from typing import cast
+from typing import get_args
+from typing import get_origin
 from typing import get_type_hints
 
 from di3.errors import DependencyInjectionError
@@ -55,6 +58,9 @@ class Provider(Generic[T]):
     ) -> T:
         if inspect.isfunction(factory):
             return self._execute(factory, *args, **kwargs)
+        if get_origin(factory) is Annotated:
+            _, factory_func = get_args(factory)
+            return factory_func()  # type: ignore[no-any-return]
         factory = cast("type[T]", factory)
         if instance := self._instances.get(factory):
             return instance
