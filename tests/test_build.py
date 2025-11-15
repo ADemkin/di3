@@ -95,8 +95,8 @@ def test_build_raises_if_unknown_dependency(provider: Provider) -> None:
         undefined: "Undefined"  # noqa: F821
 
     with pytest.raises(
-        DependencyInjectionError,
-        match="unable to resolve dependency 'Undefined'",
+        NameError,
+        match="name 'Undefined' is not defined",
     ):
         provider.build(WithMissingDependency)
 

@@ -21,12 +21,31 @@ def is_builtin(obj: Any) -> bool:  # noqa: ANN401
     return isinstance(obj, type) and obj.__module__ == "builtins"
 
 
+def get_bound_params(
+    factory: Callable[P, T] | type[T],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> Mapping[str, Any]:
+    bound = inspect.signature(factory).bind_partial(*args, **kwargs)
+    bound.apply_defaults()
+    return bound.arguments
+
+
 @dataclass(slots=True)
 class Provider(Generic[T]):
     _instances: dict[type[T], T] = field(default_factory=dict)
 
     def register_instance(self, instance: T) -> None:
         self._instances[type(instance)] = instance
+
+    def _execute(
+        self,
+        factory: Callable[P, T] | type[T],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> T:
+        dependencies = self.gather_dependencies(factory, *args, **kwargs)
+        return factory(**dependencies)  # type: ignore[call-arg]
 
     def build(
         self,
@@ -35,14 +54,11 @@ class Provider(Generic[T]):
         **kwargs: P.kwargs,
     ) -> T:
         if inspect.isfunction(factory):
-            factory = cast("Callable[P, T]", factory)
-            dependencies = self.gather_dependencies(factory, *args, **kwargs)
-            return factory(**dependencies)  # type: ignore[call-arg]
+            return self._execute(factory, *args, **kwargs)
         factory = cast("type[T]", factory)
-        if (instance := self._instances.get(factory)) is not None:
+        if instance := self._instances.get(factory):
             return instance
-        dependencies = self.gather_dependencies(factory, *args, **kwargs)
-        instance = factory(**dependencies)
+        instance = self._execute(factory, *args, **kwargs)
         self.register_instance(instance)
         return instance
 
@@ -52,20 +68,13 @@ class Provider(Generic[T]):
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> Mapping[str, Any]:
-        try:
-            type_hints = get_type_hints(
-                factory.__init__ if inspect.isclass(factory) else factory,
-                include_extras=True,
-            )
-        except NameError as err:
-            raise DependencyInjectionError(f"unable to resolve dependency {err.name!r}") from err
+        type_hints = get_type_hints(factory, include_extras=True)
         type_hints = {k: v for k, v in type_hints.items() if k != "return"}
-        bound = inspect.signature(factory).bind_partial(*args, **kwargs)
-        bound.apply_defaults()
+        bound_params = get_bound_params(factory, *args, **kwargs)
         dependencies = {}
         for arg_name, dep_type in type_hints.items():
-            if arg_name in bound.arguments:
-                dependencies[arg_name] = bound.arguments[arg_name]
+            if arg_name in bound_params:
+                dependencies[arg_name] = bound_params[arg_name]
                 continue
             # all builtins must be injected with defaults
             if is_builtin(dep_type):
@@ -76,10 +85,9 @@ class Provider(Generic[T]):
             dependencies[arg_name] = self.build(dep_type)
         return dependencies
 
-    def inject(self, func: Callable[P, T]) -> Callable[P, T]:
-        @wraps(func)
+    def inject(self, factory: Callable[P, T] | type[T]) -> Callable[P, T] | type[T]:
+        @wraps(factory)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-            dependencies = self.gather_dependencies(func, *args, **kwargs)
-            return func(**dependencies)  # type: ignore[call-arg]
+            return self._execute(factory, *args, **kwargs)
 
         return wrapper
