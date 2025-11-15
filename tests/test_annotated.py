@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Annotated
 
+from di3 import Params
 from di3 import Provider
 
 
@@ -42,6 +43,32 @@ def test_build_with_annotated_lambda(provider: Provider) -> None:
     @dataclass
     class Client:
         logger: Annotated[Logger, lambda: Logger(level="DEBUG")]
+
+    client = provider.build(Client)
+    assert client.logger.level == "DEBUG"
+
+
+def test_build_with_annotated_params(provider: Provider) -> None:
+    @dataclass
+    class Logger:
+        level: str
+
+    @dataclass
+    class Client:
+        logger: Annotated[Logger, Params(level="DEBUG")]
+
+    client = provider.build(Client)
+    assert client.logger.level == "DEBUG"
+
+
+def test_build_with_annotated_arg_params(provider: Provider) -> None:
+    @dataclass
+    class Logger:
+        level: str
+
+    @dataclass
+    class Client:
+        logger: Annotated[Logger, Params("DEBUG")]
 
     client = provider.build(Client)
     assert client.logger.level == "DEBUG"

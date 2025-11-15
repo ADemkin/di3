@@ -20,6 +20,14 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 
+class Params:
+    __slots__ = ("args", "kwargs")
+
+    def __init__(self, *args: P.args, **kwargs: P.kwargs) -> None:  # type: ignore[assignment]
+        self.args = args
+        self.kwargs = kwargs
+
+
 def is_builtin(obj: Any) -> bool:  # noqa: ANN401
     return isinstance(obj, type) and obj.__module__ == "builtins"
 
@@ -59,8 +67,11 @@ class Provider(Generic[T]):
         if inspect.isfunction(factory):
             return self._execute(factory, *args, **kwargs)
         if get_origin(factory) is Annotated:
-            _, factory_func = get_args(factory)
-            return factory_func()  # type: ignore[no-any-return]
+            factory, annotated = get_args(factory)
+            if isinstance(annotated, Params):
+                args, kwargs = annotated.args, annotated.kwargs  # type: ignore[assignment]
+            else:
+                return annotated()  # type: ignore[no-any-return]
         factory = cast("type[T]", factory)
         if instance := self._instances.get(factory):
             return instance
