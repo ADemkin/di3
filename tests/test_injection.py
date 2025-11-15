@@ -96,7 +96,7 @@ def test_build_uses_same_instance_when_building_multiple_dependencies(
 def test_build_raises_if_unknown_dependency(provider: Provider) -> None:
     @dataclass
     class WithMissingDependency:
-        undefined: "Undefined"  # type: ignore # noqa: F821
+        undefined: "Undefined"  # noqa: F821
 
     with pytest.raises(
         DependencyInjectionError,

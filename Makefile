@@ -1,9 +1,9 @@
-RUN := @poetry run
+RUN := @uv run
 SRC := di3
 TESTS := tests
 
 install:
-	@poetry install
+	@uv sync
 
 test:
 	$(RUN) pytest $(TESTS) --cov=$(SRC) --cov-report=term-missing

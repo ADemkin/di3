@@ -3,6 +3,6 @@ import pytest
 from di3 import Provider
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def provider() -> Provider:
     return Provider()
