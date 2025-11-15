@@ -46,9 +46,7 @@ def test_build_injects_multiple_dependencies(provider: Provider) -> None:
     assert isinstance(service.client.logger, Logger)
 
 
-def test_build_injects_same_instance_when_building_multiple_dependencies(
-    provider: Provider,
-) -> None:
+def test_build_uses_same_instance(provider: Provider) -> None:
     @dataclass
     class Logger:
         level: str = "INFO"
@@ -71,9 +69,7 @@ def test_build_injects_same_instance_when_building_multiple_dependencies(
     assert service.client.logger is logger
 
 
-def test_build_uses_same_instance_when_building_multiple_dependencies(
-    provider: Provider,
-) -> None:
+def test_build_caches_same_instance(provider: Provider) -> None:
     @dataclass
     class Logger:
         level: str = "INFO"
@@ -105,7 +101,7 @@ def test_build_raises_if_unknown_dependency(provider: Provider) -> None:
         provider.build(WithMissingDependency)
 
 
-def test_build_keeps_default_values_when_building(provider: Provider) -> None:
+def test_build_keeps_default_values(provider: Provider) -> None:
     @dataclass
     class Client:
         host: str = "localhost"
@@ -116,7 +112,7 @@ def test_build_keeps_default_values_when_building(provider: Provider) -> None:
     assert client.port == 8080
 
 
-def test_build_keeps_field_default_values_when_building(provider: Provider) -> None:
+def test_build_keeps_field_default_values(provider: Provider) -> None:
     @dataclass
     class Client:
         host: str = field(default="localhost")
@@ -128,9 +124,7 @@ def test_build_keeps_field_default_values_when_building(provider: Provider) -> N
 
 
 @pytest.mark.xfail
-def test_build_injects_class_from_string_type(
-    provider: Provider,
-) -> None:
+def test_build_injects_class_from_string_type(provider: Provider) -> None:
     @dataclass
     class Logger:
         level: str = "INFO"
@@ -143,7 +137,7 @@ def test_build_injects_class_from_string_type(
     assert isinstance(service.logger, Logger)
 
 
-def test_build_uses_provided_params(provider: Provider) -> None:
+def test_build_prefers_provided_params(provider: Provider) -> None:
     @dataclass
     class Logger:
         level: str = "INFO"
@@ -194,6 +188,7 @@ def test_build_allow_to_inject_function(provider: Provider) -> None:
         level: str = "INFO"
 
     def function(number: int, logger: Logger) -> int:
+        assert isinstance(logger, Logger)
         return number
 
     assert provider.build(function, number=42) == 42
@@ -205,57 +200,7 @@ def test_build_does_not_cache_function(provider: Provider) -> None:
         level: str = "INFO"
 
     def function(number: int, logger: Logger) -> int:
+        assert isinstance(logger, Logger)
         return number
 
     assert provider.build(function, number=42) == 42
-
-
-def test_inject_provides_dependencies(provider: Provider) -> None:
-    @dataclass
-    class Logger:
-        level: str = "INFO"
-
-    @provider.inject
-    def function(logger: Logger) -> int:
-        assert isinstance(logger, Logger)
-        return 42
-
-    assert function() == 42
-
-
-def test_inject_allows_kwarg_params(provider: Provider) -> None:
-    @dataclass
-    class Logger:
-        level: str = "INFO"
-
-    @provider.inject
-    def function(number: int, logger: Logger) -> int:
-        assert isinstance(logger, Logger)
-        return number
-
-    assert function(number=42) == 42
-
-
-def test_inject_allows_arg_params(provider: Provider) -> None:
-    @dataclass
-    class Logger:
-        level: str = "INFO"
-
-    @provider.inject
-    def function(number: int, logger: Logger) -> int:
-        assert isinstance(logger, Logger)
-        return number
-
-    assert function(42) == 42
-
-
-async def test_inject_provides_dependencies_for_async_func(provider: Provider) -> None:
-    @dataclass
-    class Logger:
-        level: str = "INFO"
-
-    @provider.inject
-    async def function(logger: Logger) -> int:
-        assert isinstance(logger, Logger)
-
-    await function()
