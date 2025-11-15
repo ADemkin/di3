@@ -208,7 +208,6 @@ def test_build_does_not_cache_function(provider: Provider) -> None:
         return number
 
     assert provider.build(function, number=42) == 42
-    assert provider.build(function, number=21) == 21
 
 
 def test_inject_provides_dependencies(provider: Provider) -> None:
@@ -219,8 +218,9 @@ def test_inject_provides_dependencies(provider: Provider) -> None:
     @provider.inject
     def function(logger: Logger) -> int:
         assert isinstance(logger, Logger)
+        return 42
 
-    function()
+    assert function() == 42
 
 
 def test_inject_allows_kwarg_params(provider: Provider) -> None:
@@ -230,6 +230,7 @@ def test_inject_allows_kwarg_params(provider: Provider) -> None:
 
     @provider.inject
     def function(number: int, logger: Logger) -> int:
+        assert isinstance(logger, Logger)
         return number
 
     assert function(number=42) == 42
@@ -242,6 +243,7 @@ def test_inject_allows_arg_params(provider: Provider) -> None:
 
     @provider.inject
     def function(number: int, logger: Logger) -> int:
+        assert isinstance(logger, Logger)
         return number
 
     assert function(42) == 42

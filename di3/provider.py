@@ -8,6 +8,7 @@ from typing import Any
 from typing import Generic
 from typing import ParamSpec
 from typing import TypeVar
+from typing import cast
 from typing import get_type_hints
 
 from di3.errors import DependencyInjectionError
@@ -22,51 +23,57 @@ def is_builtin(obj: Any) -> bool:  # noqa: ANN401
 
 @dataclass(slots=True)
 class Provider(Generic[T]):
-    _instances: dict[Callable[..., T], T] = field(default_factory=dict)
+    _instances: dict[type[T], T] = field(default_factory=dict)
 
     def register_instance(self, instance: T) -> None:
         self._instances[type(instance)] = instance
 
     def build(
         self,
-        factory: Callable[P, T],
+        factory: Callable[P, T] | type[T],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
+        if inspect.isfunction(factory):
+            factory = cast("Callable[P, T]", factory)
+            dependencies = self.gather_dependencies(factory, *args, **kwargs)
+            return factory(**dependencies)  # type: ignore[call-arg]
+        factory = cast("type[T]", factory)
         if (instance := self._instances.get(factory)) is not None:
             return instance
         dependencies = self.gather_dependencies(factory, *args, **kwargs)
-        instance = factory(**dependencies)  # type: ignore[call-arg]
-        if inspect.isfunction(factory):
-            return instance
+        instance = factory(**dependencies)
         self.register_instance(instance)
         return instance
 
     def gather_dependencies(
         self,
-        factory: Callable[P, T],
+        factory: Callable[P, T] | type[T],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> Mapping[str, Any]:
         try:
-            type_hints = get_type_hints(factory, include_extras=True)
+            type_hints = get_type_hints(
+                factory.__init__ if inspect.isclass(factory) else factory,
+                include_extras=True,
+            )
         except NameError as err:
             raise DependencyInjectionError(f"unable to resolve dependency {err.name!r}") from err
-        if inspect.isfunction(factory):
-            type_hints.pop("return")
+        type_hints = {k: v for k, v in type_hints.items() if k != "return"}
         bound = inspect.signature(factory).bind_partial(*args, **kwargs)
         bound.apply_defaults()
         dependencies = {}
-        for arg, dep in type_hints.items():
-            if arg in bound.arguments:
-                dependencies[arg] = bound.arguments[arg]
+        for arg_name, dep_type in type_hints.items():
+            if arg_name in bound.arguments:
+                dependencies[arg_name] = bound.arguments[arg_name]
                 continue
             # all builtins must be injected with defaults
-            if is_builtin(dep):
+            if is_builtin(dep_type):
                 raise DependencyInjectionError(
-                    f"Can not build {factory.__name__!r}: no value for param {arg}: {dep.__name__}",
+                    f"Can not build {factory.__name__!r}: no value for "
+                    f"param {arg_name}: {dep_type.__name__}",
                 )
-            dependencies[arg] = self.build(dep)
+            dependencies[arg_name] = self.build(dep_type)
         return dependencies
 
     def inject(self, func: Callable[P, T]) -> Callable[P, T]:
