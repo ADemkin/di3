@@ -23,7 +23,7 @@ P = ParamSpec("P")
 class Params:
     __slots__ = ("args", "kwargs")
 
-    def __init__(self, *args: P.args, **kwargs: P.kwargs) -> None:  # type: ignore[assignment]
+    def __init__(self, *args: P.args, **kwargs: P.kwargs) -> None:  # type: ignore[valid-type]
         self.args = args
         self.kwargs = kwargs
 
@@ -40,6 +40,16 @@ def get_bound_params(
     bound = inspect.signature(factory).bind_partial(*args, **kwargs)
     bound.apply_defaults()
     return bound.arguments
+
+
+def _unwrap_annotated(
+    annotated_factory: Callable[P, T] | type[T],
+) -> tuple[Callable[P, T], Any]:
+    factory, *meta = get_args(annotated_factory)
+    if len(meta) > 1:
+        raise TypeError(f"{factory.__name__} must have exactly 1 Annotated arg.")
+    [meta] = meta
+    return factory, meta
 
 
 @dataclass(slots=True)
@@ -67,11 +77,12 @@ class Provider(Generic[T]):
         if inspect.isfunction(factory):
             return self._execute(factory, *args, **kwargs)
         if get_origin(factory) is Annotated:
-            factory, annotated = get_args(factory)
-            if isinstance(annotated, Params):
-                args, kwargs = annotated.args, annotated.kwargs  # type: ignore[assignment]
+            factory, meta = _unwrap_annotated(factory)
+            if isinstance(meta, Params):
+                args, kwargs = meta.args, meta.kwargs  # type: ignore[assignment]
             else:
-                return annotated()  # type: ignore[no-any-return]
+                # factory function without params
+                return meta()  # type: ignore[no-any-return]
         factory = cast("type[T]", factory)
         if instance := self._instances.get(factory):
             return instance
