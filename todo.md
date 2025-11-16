@@ -1,5 +1,6 @@
 - [ ] allow override for tests
 - [ ] allow override as context manager
 - [ ] allow to register factories, but prefer annotated one
-- [ ] allow dict to be used as Param
+- [ ] use single method for registration?
+- [x] allow dict to be used as Param
 - [ ] add pytest fixture

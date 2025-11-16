@@ -80,6 +80,8 @@ class Provider(Generic[T]):
             factory, meta = _unwrap_annotated(factory)
             if isinstance(meta, Params):
                 args, kwargs = meta.args, meta.kwargs  # type: ignore[assignment]
+            elif isinstance(meta, dict):
+                kwargs = meta  # type: ignore[assignment]
             else:
                 # factory function without params
                 return meta()  # type: ignore[no-any-return]

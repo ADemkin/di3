@@ -100,3 +100,16 @@ def test_build_raises_if_incorrectly_annotated(
 
     with pytest.raises(TypeError):
         provider.build(Client)
+
+
+def test_build_with_annotated_dict(provider: Provider) -> None:
+    @dataclass
+    class Logger:
+        level: str
+
+    @dataclass
+    class Client:
+        logger: Annotated[Logger, {"level": "DEBUG"}]
+
+    client = provider.build(Client)
+    assert client.logger.level == "DEBUG"
