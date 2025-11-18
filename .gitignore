@@ -19,3 +19,6 @@ coverage.xml
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+*.egg-info/
+**/__pycache__
+build/

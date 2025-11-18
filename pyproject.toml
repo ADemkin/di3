@@ -41,10 +41,12 @@ ignore_errors = true
 name = "di3"
 version = "0.0.1"
 description = "Dependency Injector Tree builder framework"
-authors = ["Anton Demkin <antondemkin@yandex.ru>"]
+authors = [
+    { name="Anton Demkin", email="antondemkin@yandex.ru" },
+]
 license = "MIT"
 readme = "README.rst"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 
 [dependency-groups]
 dev = [

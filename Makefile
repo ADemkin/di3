@@ -27,3 +27,7 @@ mypy:
 	$(RUN) mypy $(SRC) $(TESTS)
 
 lint: ruff-check mypy
+
+tox:
+	@uv tool install tox
+	@uv tool run tox run-parallel
