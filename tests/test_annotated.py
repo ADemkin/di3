@@ -1,8 +1,6 @@
-from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import partial
 from typing import Annotated
-from typing import Any
 
 import pytest
 
@@ -78,28 +76,30 @@ def test_build_with_annotated_arg_params(provider: Provider) -> None:
     assert client.logger.level == "DEBUG"
 
 
-@pytest.mark.parametrize(
-    "annotation",
-    [
-        [],
-        [[]],
-        [lambda x: x],
-        [tuple, tuple],
-    ],
-)
-def test_build_raises_if_incorrectly_annotated(
-    provider: Provider, annotation: Iterable[Any]
-) -> None:
+class TestAnnotated:
     @dataclass
     class Logger:
         level: str
 
-    @dataclass
-    class Client:
-        logger: Annotated[Logger, *annotation]
+    @staticmethod
+    @pytest.mark.parametrize(
+        "annotation",
+        [
+            Annotated[Logger, []],
+            Annotated[Logger, lambda x: x],
+            Annotated[Logger, tuple, tuple],
+        ],
+    )
+    def test_build_raises_if_incorrectly_annotated(
+        provider: Provider,
+        annotation: type[Logger],
+    ) -> None:
+        @dataclass
+        class Client:
+            logger: annotation
 
-    with pytest.raises(TypeError):
-        provider.build(Client)
+        with pytest.raises(TypeError):
+            provider.build(Client)
 
 
 def test_build_with_annotated_dict(provider: Provider) -> None:
