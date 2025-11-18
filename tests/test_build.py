@@ -123,6 +123,19 @@ def test_build_keeps_field_default_values(provider: Provider) -> None:
     assert client.port == 8080
 
 
+def test_build_keeps_field_default_factory(provider: Provider) -> None:
+    @dataclass
+    class Logger:
+        level: str
+
+    @dataclass
+    class Client:
+        logger: Logger = field(default_factory=lambda: Logger(level="INFO"))
+
+    client = provider.build(Client)
+    assert client.logger.level == "INFO"
+
+
 @pytest.mark.xfail
 def test_build_injects_class_from_string_type(provider: Provider) -> None:
     @dataclass
