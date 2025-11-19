@@ -25,6 +25,8 @@ class Params:
     __slots__ = ("args", "kwargs")
 
     def __init__(self, *args: P.args, **kwargs: P.kwargs) -> None:  # type: ignore[valid-type]
+        if not args and not kwargs:
+            raise NameError("Params can not be empty")
         self.args = args
         self.kwargs = kwargs
 

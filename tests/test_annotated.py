@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from functools import partial
+from sys import version_info
 from typing import Annotated
 
 import pytest
@@ -74,6 +75,39 @@ def test_build_with_annotated_arg_params(provider: Provider) -> None:
 
     client = provider.build(Client)
     assert client.logger.level == "DEBUG"
+
+
+"""Different python versions handle Annotated differently.
+
+Python 3.10-3.13 will raise on Param creation.
+Python 3.14 will raise after Annotated lazily evaluated by build."""
+if version_info.minor in {10, 11, 12, 13}:
+
+    def test_build_raises_if_annotated_params_is_empty(provider: Provider) -> None:
+        @dataclass
+        class Logger:
+            level: str
+
+        with pytest.raises(NameError, match="Params can not be empty"):
+
+            @dataclass
+            class Client:
+                logger: Annotated[Logger, Params()]
+
+
+if version_info.minor == 14:
+
+    def test_build_raises_if_annotated_params_is_empty(provider: Provider) -> None:
+        @dataclass
+        class Logger:
+            level: str
+
+        @dataclass
+        class Client:
+            logger: Annotated[Logger, Params()]
+
+        with pytest.raises(NameError, match="Params can not be empty"):
+            provider.build(Client)
 
 
 class TestAnnotated:

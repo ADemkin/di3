@@ -5,8 +5,7 @@
 - [x] allow dict to be used as Param
 - [ ] add pytest fixture
 - [ ] resolve forward references like `Logger: "Logger"`
-- [ ] handle union types?
-- [ ] handle empty Params in metadata
+- [x] handle empty Params in metadata
 - [ ] handle multiple metadata entries
 - [x] handle optional types: `Logger | None`
 - [ ] split `build` to `build` & `get_instance` for classess and `call` for functions
