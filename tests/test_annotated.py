@@ -113,3 +113,17 @@ def test_build_with_annotated_dict(provider: Provider) -> None:
 
     client = provider.build(Client)
     assert client.logger.level == "DEBUG"
+
+
+def test_build_kwargs_override_annotated(provider: Provider) -> None:
+    @dataclass
+    class Logger:
+        level: str
+
+    @dataclass
+    class Client:
+        logger: Annotated[Logger, lambda: Logger(level="DEBUG")]
+
+    overridden_logger = Logger(level="TRACE")
+    client = provider.build(Client, logger=overridden_logger)
+    assert client.logger is overridden_logger
