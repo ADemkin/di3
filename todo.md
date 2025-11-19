@@ -8,12 +8,12 @@
 - [ ] handle union types?
 - [ ] handle empty Params in metadata
 - [ ] handle multiple metadata entries
-- [ ] handle optional types: `Logger | None`
+- [x] handle optional types: `Logger | None`
 - [ ] split `build` to `build` & `get_instance` for classess and `call` for functions
 - [ ] document dependency resolve order
 - [ ] provider composition?
 - [ ] protocol support and resolution?
 - [ ] configurable scope: transient & singleton
-- [ ] run tests in tox
+- [x] run tests in tox
 
 

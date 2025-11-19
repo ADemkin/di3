@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from functools import wraps
 import inspect
+from types import UnionType
 from typing import Annotated
 from typing import Any
 from typing import Generic
@@ -89,6 +90,8 @@ class Provider(Generic[T]):
             else:
                 # factory function without params
                 return meta()  # type: ignore[no-any-return]
+        if get_origin(factory) is UnionType:
+            factory, *_ = get_args(factory)
         factory = cast("type[T]", factory)
         if instance := self._instances.get(factory):
             return instance

@@ -218,3 +218,29 @@ def test_build_does_not_cache_function(provider: Provider) -> None:
 
     assert provider.build(function, number=42) == 42
     assert len(provider.instances) == 1
+
+
+def test_build_injects_optional_without_default(provider: Provider) -> None:
+    @dataclass
+    class Logger:
+        level: str = "INFO"
+
+    @dataclass
+    class Service:
+        logger: Logger | None
+
+    service = provider.build(Service)
+    assert isinstance(service.logger, Logger)
+
+
+def test_build_uses_default_for_optional(provider: Provider) -> None:
+    @dataclass
+    class Logger:
+        level: str = "INFO"
+
+    @dataclass
+    class Service:
+        logger: Logger | None = None
+
+    service = provider.build(Service)
+    assert service.logger is None
