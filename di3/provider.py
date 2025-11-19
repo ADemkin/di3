@@ -56,6 +56,10 @@ def _unwrap_annotated(
 class Provider(Generic[T]):
     _instances: dict[type[T], T] = field(default_factory=dict)
 
+    @property
+    def instances(self) -> dict[type[T], T]:
+        return self._instances
+
     def register_instance(self, instance: T) -> None:
         self._instances[type(instance)] = instance
 

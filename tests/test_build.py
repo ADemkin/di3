@@ -217,3 +217,4 @@ def test_build_does_not_cache_function(provider: Provider) -> None:
         return number
 
     assert provider.build(function, number=42) == 42
+    assert len(provider.instances) == 1
