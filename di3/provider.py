@@ -3,19 +3,21 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from dataclasses import field
 from functools import wraps
-import inspect
-from types import UnionType
-from typing import Annotated
 from typing import Any
 from typing import Generic
 from typing import ParamSpec
 from typing import TypeVar
 from typing import cast
-from typing import get_args
-from typing import get_origin
 from typing import get_type_hints
 
 from di3.errors import DependencyInjectionError
+from di3.helpers import get_bound_params
+from di3.helpers import is_annotated
+from di3.helpers import is_builtin
+from di3.helpers import is_function
+from di3.helpers import is_union
+from di3.helpers import unwrap_annotated
+from di3.helpers import unwrap_union
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -29,30 +31,6 @@ class Params:
             raise NameError("Params can not be empty")
         self.args = args
         self.kwargs = kwargs
-
-
-def is_builtin(obj: Any) -> bool:  # noqa: ANN401
-    return isinstance(obj, type) and obj.__module__ == "builtins"
-
-
-def get_bound_params(
-    factory: Callable[P, T] | type[T],
-    *args: P.args,
-    **kwargs: P.kwargs,
-) -> Mapping[str, Any]:
-    bound = inspect.signature(factory).bind_partial(*args, **kwargs)
-    bound.apply_defaults()
-    return bound.arguments
-
-
-def _unwrap_annotated(
-    annotated_factory: Callable[P, T] | type[T],
-) -> tuple[Callable[P, T], Any]:
-    factory, *meta = get_args(annotated_factory)
-    if len(meta) > 1:
-        raise TypeError(f"{factory.__name__} must have exactly 1 Annotated arg.")
-    [meta] = meta
-    return factory, meta
 
 
 @dataclass(slots=True)
@@ -81,10 +59,10 @@ class Provider(Generic[T]):
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
-        if inspect.isfunction(factory):
+        if is_function(factory):
             return self._execute(factory, *args, **kwargs)
-        if get_origin(factory) is Annotated:
-            factory, meta = _unwrap_annotated(factory)
+        if is_annotated(factory):
+            factory, meta = unwrap_annotated(factory)
             if isinstance(meta, Params):
                 args, kwargs = meta.args, meta.kwargs  # type: ignore[assignment]
             elif isinstance(meta, dict):
@@ -92,8 +70,8 @@ class Provider(Generic[T]):
             else:
                 # factory function without params
                 return meta()  # type: ignore[no-any-return]
-        if get_origin(factory) is UnionType:
-            factory, *_ = get_args(factory)
+        if is_union(factory):
+            factory = unwrap_union(factory)
         factory = cast("type[T]", factory)
         if instance := self._instances.get(factory):
             return instance

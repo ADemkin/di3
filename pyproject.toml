@@ -10,6 +10,7 @@ ignore = [
     "TRY003",  # allow long exception messages
     "EM102",  # allow f-string exception messages
     "EM101",  # allow string literal in exception message
+    "ANN401",  # allow Any type
 ]
 
 [tool.ruff.lint.per-file-ignores]
