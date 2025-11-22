@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Sync env
+        run: uv sync
+
+      - name: Ruff (check only)
+        run: uv run ruff check di3 tests
+
+      - name: Ruff Format (check only)
+        run: uv run ruff format --check di3 tests
+
+      - name: Mypy
+        run: uv run mypy di3 tests
+
+  tests:
+    name: Test Matrix
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install tox
+        run: uv tool install tox
+
+      - name: Run tox
+        run: uv tool run tox
